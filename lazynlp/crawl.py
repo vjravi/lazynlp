@@ -12,6 +12,7 @@ import urllib.request
 
 import tldextract
 import requests
+from bs4 import BeautifulSoup
 
 from lazynlp.cleaner import *
 from lazynlp.utils import *
@@ -45,6 +46,29 @@ def get_us_gutenberg_links(outfile, max_id=58910):
 			out.write(link + '\n')
 		else:
 			print("Can't find link for book id", book_id)
+	out.close()
+
+def get_de_gutenberg_links(outfile):
+	# Scrape gutenberg page for German to get all urls
+	german_page_url = 'https://www.gutenberg.org/browse/languages/de'
+
+	response = urllib.request.urlopen(german_page_url)
+	page = response.read()
+	page = page.decode('utf-8')
+
+	out = open(outfile, 'w')
+	if page:
+		soup = BeautifulSoup(page, "html.parser")
+		list_items = soup.find_all('li', attrs={'class': 'pgdbetext'})
+		for li in list_items:
+			anchors = li.find_all('a')
+			for anchor in anchors:
+				if '(German)' in li.text:
+					relative_url = anchor['href']
+					book_id = relative_url.replace('/ebooks/', '')
+					link = get_gutenberg_link_from_id(book_id)
+					if link:
+						out.write(link + '\n')	
 	out.close()
 
 def get_id_aus(link):
